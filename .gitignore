@@ -1,0 +1,4 @@
+.venv/
+data/
+qdrant_storage/
+__pycache__/
