@@ -1,0 +1,13 @@
+qdrant:
+  collection_name: hydra_passages
+  host: localhost
+  port: 6333
+
+retrieval:
+  model_name: BAAI/bge-small-en-v1.5
+  top_k: 5
+
+paths:
+  passages: data/passages.jsonl
+  embeddings: data/embeddings.npy
+  eval_set: data/eval_set.json 
