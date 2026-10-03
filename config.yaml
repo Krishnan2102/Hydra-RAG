@@ -34,3 +34,7 @@ rerank:
 benchmark:
   latency_queries: 100
   warmup_queries: 10
+
+evaluation:
+  sample_size: 25
+  judge_model: "openai/gpt-oss-120b"

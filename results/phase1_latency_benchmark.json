@@ -1,0 +1,50 @@
+{
+  "phase": "Phase 1: Dense Baseline",
+  "query_count": 100,
+  "hardware": {
+    "os": "Linux",
+    "platform_release": "7.1.3-2-cachyos",
+    "cpu": "Unknown",
+    "cores_logical": 12,
+    "cpu_model": "AMD Ryzen 5 7530U with Radeon Graphics",
+    "ram_gb": 14.93
+  },
+  "p50_ms": 29.69,
+  "p95_ms": 37.42,
+  "p99_ms": 45.85,
+  "mean_ms": 30.59,
+  "min_ms": 26.32,
+  "max_ms": 47.26,
+  "embed_ms": 23.47,
+  "search_ms": 7.13,
+  "fuse_ms": 0.0,
+  "metrics_ms": {
+    "total_latency": {
+      "mean": 30.59,
+      "min": 26.32,
+      "p50": 29.69,
+      "p90": 34.31,
+      "p95": 37.42,
+      "p99": 45.85,
+      "max": 47.26
+    },
+    "embed_latency": {
+      "mean": 23.47,
+      "min": 20.93,
+      "p50": 22.84,
+      "p90": 25.9,
+      "p95": 27.39,
+      "p99": 29.55,
+      "max": 31.07
+    },
+    "qdrant_search_latency": {
+      "mean": 7.13,
+      "min": 4.97,
+      "p50": 6.31,
+      "p90": 8.66,
+      "p95": 11.25,
+      "p99": 18.01,
+      "max": 21.92
+    }
+  }
+}

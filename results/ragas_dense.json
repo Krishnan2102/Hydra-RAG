@@ -1,0 +1,390 @@
+{
+  "phase": "Phase 1: Dense Baseline",
+  "mode": "dense",
+  "sample_size": 25,
+  "judge_model": "groq/openai/gpt-oss-120b",
+  "accounts_rotated": 3,
+  "scores": {
+    "context_precision": 0.8598,
+    "context_recall": 1.0,
+    "label_recall_at_5": 1.0
+  },
+  "query_evaluations": [
+    {
+      "query": "who is jessica simpson married to",
+      "gold_ids": [
+        1
+      ],
+      "retrieved_ids": [
+        1,
+        4,
+        8,
+        2,
+        3
+      ],
+      "context_precision": 1.0,
+      "context_recall": 1.0
+    },
+    {
+      "query": "what is gamma beta phi society",
+      "gold_ids": [
+        13
+      ],
+      "retrieved_ids": [
+        13,
+        17,
+        14,
+        19,
+        11
+      ],
+      "context_precision": 1.0,
+      "context_recall": 1.0
+    },
+    {
+      "query": "weather in lakemore ohio fahrenheit",
+      "gold_ids": [
+        22
+      ],
+      "retrieved_ids": [
+        22,
+        25,
+        26,
+        23,
+        20
+      ],
+      "context_precision": 1.0,
+      "context_recall": 1.0
+    },
+    {
+      "query": "which composer did the wedding march",
+      "gold_ids": [
+        30
+      ],
+      "retrieved_ids": [
+        33,
+        37,
+        36,
+        30,
+        31
+      ],
+      "context_precision": 1.0,
+      "context_recall": 1.0
+    },
+    {
+      "query": "definition of a cleft",
+      "gold_ids": [
+        47
+      ],
+      "retrieved_ids": [
+        47,
+        48,
+        43,
+        45,
+        60
+      ],
+      "context_precision": 1.0,
+      "context_recall": 1.0
+    },
+    {
+      "query": "conan actor",
+      "gold_ids": [
+        65
+      ],
+      "retrieved_ids": [
+        71,
+        72,
+        65,
+        67,
+        70
+      ],
+      "context_precision": 0.5833,
+      "context_recall": 1.0
+    },
+    {
+      "query": "who is michael lavaughn robinson",
+      "gold_ids": [
+        75
+      ],
+      "retrieved_ids": [
+        74,
+        75,
+        81,
+        79,
+        82
+      ],
+      "context_precision": 0.6792,
+      "context_recall": 1.0
+    },
+    {
+      "query": "what is the infant mortality rate",
+      "gold_ids": [
+        84
+      ],
+      "retrieved_ids": [
+        91,
+        84,
+        92,
+        88,
+        87
+      ],
+      "context_precision": 1.0,
+      "context_recall": 1.0
+    },
+    {
+      "query": "when did the globe theatre have performances",
+      "gold_ids": [
+        96
+      ],
+      "retrieved_ids": [
+        38988,
+        102,
+        96,
+        38986,
+        38984
+      ],
+      "context_precision": 0.8056,
+      "context_recall": 1.0
+    },
+    {
+      "query": "what is best oven temp to use to keep food warm",
+      "gold_ids": [
+        104
+      ],
+      "retrieved_ids": [
+        104,
+        105,
+        109,
+        108,
+        110
+      ],
+      "context_precision": 1.0,
+      "context_recall": 1.0
+    },
+    {
+      "query": "which of the following explorers led a voyage that ultimately circumnavigated the globe?",
+      "gold_ids": [
+        119
+      ],
+      "retrieved_ids": [
+        121,
+        119,
+        80135,
+        80132,
+        123
+      ],
+      "context_precision": 0.5,
+      "context_recall": 1.0
+    },
+    {
+      "query": "where is venice la",
+      "gold_ids": [
+        125
+      ],
+      "retrieved_ids": [
+        127,
+        126,
+        125,
+        51401,
+        51395
+      ],
+      "context_precision": 1.0,
+      "context_recall": 1.0
+    },
+    {
+      "query": "what does an identity crisis",
+      "gold_ids": [
+        134
+      ],
+      "retrieved_ids": [
+        140,
+        134,
+        135,
+        137,
+        142
+      ],
+      "context_precision": 0.95,
+      "context_recall": 1.0
+    },
+    {
+      "query": "foods that have a good source of phosphorus",
+      "gold_ids": [
+        150,
+        151
+      ],
+      "retrieved_ids": [
+        150,
+        147,
+        151,
+        144,
+        13845
+      ],
+      "context_precision": 0.7,
+      "context_recall": 1.0
+    },
+    {
+      "query": "how old is charlize theron?",
+      "gold_ids": [
+        160
+      ],
+      "retrieved_ids": [
+        155,
+        156,
+        160,
+        162,
+        159
+      ],
+      "context_precision": 0.3333,
+      "context_recall": 1.0
+    },
+    {
+      "query": "what is a conductors white stick called",
+      "gold_ids": [
+        168
+      ],
+      "retrieved_ids": [
+        168,
+        10181,
+        49846,
+        74445,
+        10178
+      ],
+      "context_precision": 1.0,
+      "context_recall": 1.0
+    },
+    {
+      "query": "what are contracts",
+      "gold_ids": [
+        174
+      ],
+      "retrieved_ids": [
+        181,
+        85750,
+        85754,
+        178,
+        174
+      ],
+      "context_precision": 1.0,
+      "context_recall": 1.0
+    },
+    {
+      "query": "what age was martin luther king when he was admitted",
+      "gold_ids": [
+        190
+      ],
+      "retrieved_ids": [
+        186,
+        190,
+        51928,
+        184,
+        189
+      ],
+      "context_precision": 0.5,
+      "context_recall": 1.0
+    },
+    {
+      "query": "what is a robinhood account",
+      "gold_ids": [
+        202
+      ],
+      "retrieved_ids": [
+        202,
+        199,
+        203,
+        87316,
+        87310
+      ],
+      "context_precision": 1.0,
+      "context_recall": 1.0
+    },
+    {
+      "query": "definition of elastin",
+      "gold_ids": [
+        211
+      ],
+      "retrieved_ids": [
+        213,
+        206,
+        212,
+        211,
+        207
+      ],
+      "context_precision": 1.0,
+      "context_recall": 1.0
+    },
+    {
+      "query": "who was thomas edison's parents",
+      "gold_ids": [
+        218
+      ],
+      "retrieved_ids": [
+        220,
+        218,
+        221,
+        219,
+        222
+      ],
+      "context_precision": 1.0,
+      "context_recall": 1.0
+    },
+    {
+      "query": "is prunus evereste a small tree",
+      "gold_ids": [
+        232
+      ],
+      "retrieved_ids": [
+        232,
+        227,
+        233,
+        229,
+        226
+      ],
+      "context_precision": 0.8056,
+      "context_recall": 1.0
+    },
+    {
+      "query": "where is calico ghost town in california",
+      "gold_ids": [
+        236
+      ],
+      "retrieved_ids": [
+        236,
+        243,
+        240,
+        242,
+        238
+      ],
+      "context_precision": 1.0,
+      "context_recall": 1.0
+    },
+    {
+      "query": "dr michael leggio npi number",
+      "gold_ids": [
+        248
+      ],
+      "retrieved_ids": [
+        248,
+        244,
+        253,
+        247,
+        249
+      ],
+      "context_precision": 1.0,
+      "context_recall": 1.0
+    },
+    {
+      "query": "what is fn key on mac",
+      "gold_ids": [
+        263
+      ],
+      "retrieved_ids": [
+        254,
+        263,
+        262,
+        260,
+        257
+      ],
+      "context_precision": 0.6389,
+      "context_recall": 1.0
+    }
+  ]
+}

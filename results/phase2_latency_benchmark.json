@@ -10,6 +10,17 @@
     "cpu_model": "AMD Ryzen 5 7530U with Radeon Graphics",
     "ram_gb": 14.93
   },
+  "p50_ms": 37.56,
+  "p95_ms": 44.75,
+  "p99_ms": 47.01,
+  "mean_ms": 38.09,
+  "min_ms": 33.0,
+  "max_ms": 56.6,
+  "embed_ms": 23.47,
+  "search_ms": 14.38,
+  "dense_search_ms": 8.68,
+  "sparse_search_ms": 5.55,
+  "fuse_ms": 0.24,
   "metrics_ms": {
     "total_latency": {
       "mean": 38.09,
