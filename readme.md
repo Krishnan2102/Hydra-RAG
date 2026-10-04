@@ -99,68 +99,45 @@ The platform includes end-to-end data ingestion pipelines, latency benchmarking,
 ```
 ## Benchmark & Evaluation Results
 
-The system was benchmarked across **100,000+ indexed passages** (`data/passages.jsonl`) using the golden evaluation set (`data/eval_set.json`). 
-
-Performance was tracked across two tracks:
-1. **Phase 1 Baseline (Dense):** Pure vector retrieval using `BAAI/bge-small-en-v1.5`.
-2. **Phase 2 Hybrid + Rerank:** Dual-leg retrieval (Dense + BM25 Sparse) with `BAAI/bge-reranker-base` cross-encoder reranking over candidate pools.
+The retrieval pipeline was benchmarked across the golden evaluation corpus to compare **Phase 1 (Dense Baseline)** against **Phase 2 (Hybrid Retrieval + Neural Re-ranking)**.
 
 ---
 
-### 1. RAGAS Quality Metrics
+### 1. Hackathon Target Scorecard
 
-Quality was evaluated across labelled queries with the target of beating the hackathon accuracy threshold without LLM hallucination:
+All key hackathon quality thresholds and latency constraints were successfully satisfied:
 
-| Metric | Phase 1 (Dense) | Phase 2 (Hybrid + Rerank) | Target Threshold | Status |
-| :--- | :---: | :---: | :---: | :---: |
-| **Context Precision** | ~0.742 | **0.884** | `> 0.800` | **Met** |
-| **Context Recall** | ~0.691 | **0.865** | `> 0.750` | **Met** |
-| **MRR @ 5** | 0.718 | **0.872** | — | Improved (+21.4%) |
-| **Hit Rate @ 5** | 0.812 | **0.946** | — | Improved (+16.5%) |
-
-> **Key Finding:** Adding lexical BM25 token vectors eliminated misses on named entities, specific numeric codes, and verbatim phrasing, while the cross-encoder lifted precision by pruning false-positive semantic matches.
-
----
-
-### 2. Latency Benchmarks (CPU Inference)
-
-Evaluated under multi-threaded CPU execution (`OMP_NUM_THREADS=4`, `MKL_NUM_THREADS=4`) to simulate constrained production hosting without dedicated GPU instances:
-
-| Metric | Phase 1 (Dense) | Phase 2 (Hybrid + Rerank) | Hackathon Target | Status |
-| :--- | :---: | :---: | :---: | :---: |
-| **p50 Latency** | 22.4 ms | 68.5 ms | — | — |
-| **p95 Latency** | 41.8 ms | **128.2 ms** | `< 300.0 ms` | **Met** |
-| **p99 Latency** | 56.1 ms | 148.7 ms | — | — |
-| **Mean Latency** | 24.8 ms | 74.1 ms | — | — |
+| Metric | Phase 1 (Dense) | Phase 2 (Hybrid) | Net Change | Target | Status |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Context Precision** | 0.863 | **0.884** | +0.021 | above 0.750 | **Met**[cite: 5] |
+| **Context Recall** | 1.000 | 1.000 | +0.000 | above 0.700 | **Met**[cite: 5] |
+| **p50 Latency** | 29.7 ms | 196.5 ms | +166.8 ms | — | Evaluated[cite: 5] |
+| **p95 Latency** | 37.4 ms | **254.3 ms** | +216.9 ms | under 300.0 ms | **Met**[cite: 5] |
+| **p99 Latency** | 45.9 ms | 313.9 ms | +268.1 ms | — | Evaluated[cite: 5] |
 
 ---
 
-### 3. Stage-by-Stage Latency Breakdown (Phase 2 Hybrid)
+### 2. Key Findings & Architecture Analysis
 
-To keep overall p95 latency under the strict **300 ms** target budget, candidate pools and text truncation were tuned per stage:
-
-| Stage | Component / Engine | Average Latency | Description |
-| :--- | :--- | :---: | :--- |
-| **Dense Embedding** | FastEmbed (ONNX) | ~14.2 ms | Generates 384-d dense vector |
-| **Sparse Tokenization**| FastEmbed BM25 | ~3.8 ms | Computes token indices and weights |
-| **Qdrant Search** | Vector DB Engine | ~18.5 ms | Executes parallel dense + sparse leg search |
-| **Candidate Union** | Set Union Pool | ~0.6 ms | Merges candidates into top-20 pool |
-| **Neural Re-ranking** | `bge-reranker-base` | ~37.0 ms | Fast cross-encoder scoring on candidate snippets |
-| **Total Query Latency**| **End-to-End** | **~74.1 ms** | **Well within the <300 ms SLA** |
+* **Target Recall Maintained (1.000):** Context recall comfortably exceeded the minimum 0.700 target threshold across both dense baseline and hybrid tracks[cite: 5].
+* **Lifted Context Precision (+0.021):** Introducing the cross-encoder re-ranking stage (`BAAI/bge-reranker-base`) increased context precision from **0.863 to 0.884** (exact score: `0.8838`), filtering out semantic noise and positioning relevant passages higher in top-5 candidate lists[cite: 5].
+* **Latency SLA Compliance (< 300 ms):** Although the secondary cross-encoder re-ranking step introduces additional neural inference, Phase 2 maintained a **p95 latency of 254.3 ms**, staying within the **< 300.0 ms** hackathon performance requirement[cite: 5].
 
 ---
 
-### Reproducing Benchmark Numbers
+### 3. Reproducing the Evaluation Telemetry
 
-You can regenerate and verify these metric files locally:
+To re-run the benchmark tests and recreate the scorecard locally:
 
 ```bash
-# 1. Run latency test suite (generates results/phase1_latency.json and phase2_latency.json)
+# 1. Run latency benchmarks (writes to results/phase1_latency.json and phase2_latency.json)
 python scripts/benchmark_latency.py
 
-# 2. Run retrieval quality evaluation (generates results/ragas_hybrid.json and phase2_ragas.json)
+# 2. Run automated RAGAS scoring (writes to results/phase1_ragas.json and phase2_ragas.json)
 python eval/eval_ragas.py
----
+
+# 3. View the live scorecard and interactive plots in the Streamlit UI
+python -m streamlit run app/streamlit_app.py
 
 ## Getting Started
 
