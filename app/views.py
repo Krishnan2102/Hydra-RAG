@@ -1,7 +1,14 @@
 """Page functions for the HYDRA-RAG dashboard with eager pre-warming and telemetry caching."""
+import sys
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import streamlit as st
+
+# Ensure project root is accessible for retrieval imports
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 try:
     from app.ui_helpers import (
@@ -28,32 +35,81 @@ except ModuleNotFoundError:
         page_header,
     )
 
+try:
+    from retrieval.retriever import HydraRetriever
+except ModuleNotFoundError:
+    from retriever import HydraRetriever
+
 FULL_CORPUS = 100_000
 PHASE_OF_MODE = {"dense": "Phase 1", "hybrid": "Phase 2"}
+
+
+@st.cache_resource(show_spinner=False)
+def get_retriever_instance():
+    """Cache the HydraRetriever instance across app re-runs."""
+    return HydraRetriever()
 
 
 @st.cache_resource(show_spinner=False)
 def warmup_retrieval_pipeline():
     """Eagerly load transformer checkpoints, sparse tokenizers, and Qdrant socket pools."""
     try:
-        from retrieval.dense import search
-        search(query="system warm up signal", mode="dense", top_k=1)
-        search(query="system warm up signal", mode="hybrid", top_k=1)
+        retriever = get_retriever_instance()
+        retriever.search_dense(query="system warm up signal", limit=1)
+        retriever.search_hybrid(query="system warm up signal", limit=1)
         return True
-    except Exception as exc:
+    except Exception:
         return False
 
 
 @st.cache_data(show_spinner=False)
 def _cached_search(query: str, mode: str, category: str):
-    """Execute vector retrieval and memoize exact output payloads and latency telemetry."""
-    from retrieval.dense import search
-    return search(
-        query=query,
-        mode=mode,
-        top_k=5,
-        filters=None if category == "All" else {"category": category},
-    )
+    """Execute vector retrieval via HydraRetriever and adapt outputs for the UI."""
+    retriever = get_retriever_instance()
+
+    # Call the exact method based on mode
+    if mode.lower() == "hybrid":
+        result = retriever.search_hybrid(query=query, limit=10 if category != "All" else 5)
+    else:
+        result = retriever.search_dense(query=query, limit=10 if category != "All" else 5)
+
+    raw_hits = result.get("hits", [])
+    timings = result.get("timings_ms", {})
+
+    adapted_hits = []
+    for hit in raw_hits:
+        metadata = hit.get("metadata", {})
+        item_category = metadata.get("category", hit.get("category", "n/a"))
+
+        # Apply category filtering if set
+        if category != "All" and item_category != category:
+            continue
+
+        adapted_hits.append(
+            {
+                "id": hit.get("id"),
+                "score": hit.get("score"),
+                "text": hit.get("text", ""),
+                "source": metadata.get("source", hit.get("source", "unknown source")),
+                "category": item_category,
+                "timings": timings,
+                "metadata": metadata,
+            }
+        )
+        if len(adapted_hits) == 5:
+            break
+
+    # Attach timings to the first hit if present, or maintain an empty payload with timings
+    if not adapted_hits and raw_hits:
+        adapted_hits = [{
+            "id": "none",
+            "score": 0.0,
+            "text": "",
+            "timings": timings,
+            "metadata": {},
+        }]
+
+    return adapted_hits
 
 
 def _tile(column, label, value, delta=None, delta_color="normal"):
@@ -63,9 +119,9 @@ def _tile(column, label, value, delta=None, delta_color="normal"):
 
 def _run_search(query: str, mode: str, category: str):
     hits = _cached_search(query=query, mode=mode, category=category)
-    if hits:
+    if hits and hits[0].get("id") != "none":
         history = st.session_state.setdefault("history", {"Phase 1": [], "Phase 2": []})
-        phase_label = PHASE_OF_MODE[mode]
+        phase_label = PHASE_OF_MODE.get(mode, "Phase 1")
         total_latency = hits[0].get("timings", {}).get("total_ms", 0.0)
 
         # Prevent unbounded latency metric duplication during mode toggling
@@ -75,10 +131,12 @@ def _run_search(query: str, mode: str, category: str):
             history[phase_label].append(total_latency)
             tracked_queries.add(query_sig)
 
-    return hits
+    return [h for h in hits if h.get("id") != "none"]
 
 
 def _render_hits(hits, compact=False, other_ids=None):
+    if not hits:
+        return
     timings = hits[0].get("timings", {})
     line = (
         f"Encoding {timings.get('embed_ms', 0):.1f} ms, Qdrant {timings.get('search_ms', 0):.1f} ms, "
@@ -186,7 +244,7 @@ def page_dashboard():
     phases = {f"Phase {n}": load_phase(n) for n in (1, 2)}
     available = [name for name, data in phases.items() if data["has_data"]]
     if not available:
-        st.info("No results yet. Run eval/run_ragas.py and eval/latency.py; they write JSON files to results/.")
+        st.info("No results yet. Run eval/eval_ragas.py and scripts/benchmark_latency.py; they write JSON files to results/.")
         return
     size = get_index_size() or next((phases[n]["n_passages"] for n in available if phases[n]["n_passages"]), None)
     if size and size < FULL_CORPUS:
@@ -221,7 +279,7 @@ def page_dashboard():
         if series:
             latency_chart(series, TARGETS["p95_ms"])
         else:
-            st.info("Per-query latencies appear after eval/latency.py runs.")
+            st.info("Per-query latencies appear after scripts/benchmark_latency.py runs.")
     with right, card("Latency by stage", "Average milliseconds per step"):
         rows = [
             {"metric": s.capitalize(), "value": v, "phase": n}
@@ -230,7 +288,7 @@ def page_dashboard():
         if rows:
             grouped_bar(rows, fmt=".1f")
         else:
-            st.info("Stage timings appear once eval/latency.py logs embed, search and fuse times.")
+            st.info("Stage timings appear once scripts/benchmark_latency.py logs embed, search and fuse times.")
 
     left, right = st.columns(2)
     with left, card("RAGAS scores", "Context precision and recall, scale 0 to 1"):
@@ -243,7 +301,7 @@ def page_dashboard():
             grouped_bar(rows, y_domain=[0, 1])
             st.caption(f"Targets: precision above {TARGETS['precision']}, recall above {TARGETS['recall']}")
         else:
-            st.info("RAGAS scores appear after eval/run_ragas.py runs.")
+            st.info("RAGAS scores appear after eval/eval_ragas.py runs.")
     with right, card("Retrieval accuracy", "Checked against the labelled relevant passages, no LLM judge"):
         rows = [
             {"metric": label, "value": v, "phase": n}

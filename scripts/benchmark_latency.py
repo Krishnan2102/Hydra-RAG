@@ -7,6 +7,11 @@ from pathlib import Path
 import numpy as np
 import yaml
 
+# Prepend project root to sys.path to guarantee imports work
+root_dir = Path(__file__).resolve().parent.parent
+if str(root_dir) not in sys.path:
+    sys.path.insert(0, str(root_dir))
+
 from retrieval.retriever import HydraRetriever
 
 
@@ -58,7 +63,7 @@ def main():
     results_dir = Path(cfg["paths"]["results_dir"])
     results_dir.mkdir(parents=True, exist_ok=True)
 
-    n_warmup = cfg.get("benchmark", {}).get("warmup_queries", 10)
+    n_warmup = cfg.get("benchmark", {}).get("warmup_queries", 5)
     n_queries = cfg.get("benchmark", {}).get("latency_queries", 100)
 
     print(f"Loading queries from {eval_path}...")
@@ -79,14 +84,18 @@ def main():
     warmup_set = queries[:n_warmup]
     bench_set = queries[n_warmup : n_warmup + n_queries]
 
+    print("Initializing HydraRetriever...")
     retriever = HydraRetriever()
 
     print(f"\nWarming up engine ({n_warmup} queries in {mode.upper()} mode)...")
-    for q in warmup_set:
+    for idx, q in enumerate(warmup_set, 1):
+        t_start = time.perf_counter()
         if mode == "dense":
             retriever.search_dense(q, limit=5)
         else:
             retriever.search_hybrid(q, limit=5)
+        dt = (time.perf_counter() - t_start) * 1000.0
+        print(f"  Warmup {idx}/{n_warmup} completed in {dt:.1f}ms")
 
     print(f"\nExecuting official {mode.upper()} benchmark ({n_queries} consecutive queries)...")
     total_times = []
@@ -105,8 +114,10 @@ def main():
             sparse_leg_times.append(res["timings_ms"]["sparse_leg_ms"])
             fusion_times.append(res["timings_ms"]["fusion_ms"])
 
-        if i % 25 == 0:
-            print(f"  Processed {i}/{n_queries} queries | Current p95: {np.percentile(total_times, 95):.2f} ms")
+        # Live feedback every 10 queries
+        if i % 10 == 0 or i == n_queries:
+            current_p95 = np.percentile(total_times, 95)
+            print(f"  Query {i:>3}/{n_queries} | Last: {total_times[-1]:>6.1f}ms | Running p95: {current_p95:>6.1f}ms")
 
     bench_results = {
         "phase": f"Phase {'1: Dense Baseline' if mode == 'dense' else '2: Hybrid Search'}",
@@ -123,7 +134,7 @@ def main():
         bench_results["metrics_ms"]["sparse_leg"] = calc_percentiles(sparse_leg_times)
         bench_results["metrics_ms"]["fusion"] = calc_percentiles(fusion_times)
 
-    out_file = results_dir / f"phase2_latency_benchmark.json" if mode == "hybrid" else results_dir / "phase1_latency_benchmark.json"
+    out_file = results_dir / ("phase2_latency_benchmark.json" if mode == "hybrid" else "phase1_latency_benchmark.json")
     with open(out_file, "w", encoding="utf-8") as f:
         json.dump(bench_results, f, indent=2)
 

@@ -5,7 +5,7 @@
   "judge_model": "groq/openai/gpt-oss-120b",
   "accounts_rotated": 3,
   "scores": {
-    "context_precision": 0.8587,
+    "context_precision": 0.8838,
     "context_recall": 1.0,
     "label_recall_at_5": 1.0
   },
@@ -32,9 +32,9 @@
       ],
       "retrieved_ids": [
         13,
-        17,
         14,
-        19,
+        17,
+        16,
         11
       ],
       "context_precision": 1.0,
@@ -46,11 +46,11 @@
         22
       ],
       "retrieved_ids": [
-        22,
         25,
-        26,
+        22,
         23,
-        73952
+        26,
+        76595
       ],
       "context_precision": 1.0,
       "context_recall": 1.0
@@ -61,11 +61,11 @@
         30
       ],
       "retrieved_ids": [
-        33,
-        36,
-        37,
         30,
-        79540
+        33,
+        37,
+        36,
+        31
       ],
       "context_precision": 1.0,
       "context_recall": 1.0
@@ -77,10 +77,10 @@
       ],
       "retrieved_ids": [
         47,
-        43,
         48,
-        45,
-        60
+        60,
+        43,
+        45
       ],
       "context_precision": 1.0,
       "context_recall": 1.0
@@ -92,12 +92,12 @@
       ],
       "retrieved_ids": [
         71,
-        72,
         65,
         70,
-        56546
+        72,
+        94380
       ],
-      "context_precision": 0.5833,
+      "context_precision": 0.5,
       "context_recall": 1.0
     },
     {
@@ -106,13 +106,13 @@
         75
       ],
       "retrieved_ids": [
-        74,
-        75,
         81,
+        75,
+        74,
         79,
-        80
+        82
       ],
-      "context_precision": 0.6792,
+      "context_precision": 0.8875,
       "context_recall": 1.0
     },
     {
@@ -122,12 +122,12 @@
       ],
       "retrieved_ids": [
         91,
-        84,
         92,
         88,
-        87
+        87,
+        84
       ],
-      "context_precision": 1.0,
+      "context_precision": 0.8667,
       "context_recall": 1.0
     },
     {
@@ -136,13 +136,13 @@
         96
       ],
       "retrieved_ids": [
-        102,
+        95,
         96,
         38988,
-        38986,
-        95
+        102,
+        99
       ],
-      "context_precision": 0.6389,
+      "context_precision": 0.5833,
       "context_recall": 1.0
     },
     {
@@ -151,8 +151,8 @@
         104
       ],
       "retrieved_ids": [
-        104,
         109,
+        104,
         105,
         108,
         110
@@ -166,13 +166,13 @@
         119
       ],
       "retrieved_ids": [
-        121,
         80135,
-        119,
+        121,
         123,
-        80132
+        119,
+        86521
       ],
-      "context_precision": 0.3333,
+      "context_precision": 0.25,
       "context_recall": 1.0
     },
     {
@@ -181,11 +181,11 @@
         125
       ],
       "retrieved_ids": [
-        126,
-        127,
         125,
-        51395,
-        51401
+        127,
+        126,
+        131,
+        133
       ],
       "context_precision": 1.0,
       "context_recall": 1.0
@@ -196,10 +196,10 @@
         134
       ],
       "retrieved_ids": [
+        134,
         140,
         135,
-        134,
-        137,
+        138,
         142
       ],
       "context_precision": 0.95,
@@ -213,12 +213,12 @@
       ],
       "retrieved_ids": [
         150,
-        144,
         151,
+        13845,
         146,
-        13845
+        147
       ],
-      "context_precision": 0.7556,
+      "context_precision": 0.8333,
       "context_recall": 1.0
     },
     {
@@ -229,7 +229,7 @@
       "retrieved_ids": [
         155,
         160,
-        156,
+        159,
         162,
         158
       ],
@@ -243,10 +243,10 @@
       ],
       "retrieved_ids": [
         168,
-        35971,
+        164,
         10181,
-        35975,
-        10178
+        10178,
+        37116
       ],
       "context_precision": 1.0,
       "context_recall": 1.0
@@ -259,9 +259,9 @@
       "retrieved_ids": [
         17745,
         181,
-        85750,
         178,
-        174
+        174,
+        85750
       ],
       "context_precision": 1.0,
       "context_recall": 1.0
@@ -272,13 +272,13 @@
         190
       ],
       "retrieved_ids": [
-        186,
         190,
-        184,
+        186,
+        192,
         51928,
-        192
+        51930
       ],
-      "context_precision": 0.5,
+      "context_precision": 1.0,
       "context_recall": 1.0
     },
     {
@@ -288,12 +288,12 @@
       ],
       "retrieved_ids": [
         202,
-        203,
         199,
         87316,
+        203,
         87310
       ],
-      "context_precision": 1.0,
+      "context_precision": 0.8875,
       "context_recall": 1.0
     },
     {
@@ -303,8 +303,8 @@
       ],
       "retrieved_ids": [
         213,
-        206,
         212,
+        206,
         211,
         207
       ],
@@ -321,7 +321,7 @@
         218,
         221,
         219,
-        223
+        222
       ],
       "context_precision": 1.0,
       "context_recall": 1.0
@@ -335,8 +335,8 @@
         232,
         233,
         227,
-        229,
-        230
+        230,
+        229
       ],
       "context_precision": 0.8875,
       "context_recall": 1.0
@@ -363,8 +363,8 @@
       ],
       "retrieved_ids": [
         248,
-        244,
         253,
+        244,
         247,
         245
       ],
@@ -377,13 +377,13 @@
         263
       ],
       "retrieved_ids": [
-        254,
-        262,
         260,
         263,
-        256
+        262,
+        254,
+        261
       ],
-      "context_precision": 0.6389,
+      "context_precision": 0.95,
       "context_recall": 1.0
     }
   ]

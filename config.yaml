@@ -1,7 +1,8 @@
 qdrant:
-  collection_name: "hydra_passages"
+  url: "http://localhost:6333"
   host: "localhost"
   port: 6333
+  collection_name: "hydra_passages"
   dense_vector: "dense"
   sparse_vector: "sparse"
 
@@ -10,7 +11,7 @@ retrieval:
   query_prefix: "Represent this sentence for searching relevant passages: "
   max_seq_length: 256
   top_k: 5
-  candidates_per_leg: 50
+  candidates_per_leg: 20
 
 fusion:
   method: "rrf"
@@ -27,9 +28,18 @@ paths:
   results_dir: "results"
 
 rerank:
-  enabled: false
-  model: "cross-encoder/ms-marco-MiniLM-L-6-v2"
-  pool_size: 20
+  enabled: true
+  model: "Xenova/ms-marco-MiniLM-L-6-v2"
+  pool_size: 4
+
+retrieval:
+  top_k: 5
+  candidates_per_leg: 4
+
+embedding:
+  dense_model: "BAAI/bge-small-en-v1.5"
+  sparse_model: "Qdrant/bm25"
+  reranker_model: "BAAI/bge-reranker-base"
 
 benchmark:
   latency_queries: 100
