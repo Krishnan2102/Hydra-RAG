@@ -1,176 +1,253 @@
-# Hydra-RAG: High-Precision Dual-Vector Retrieval Pipeline
+# HYDRA-RAG: Two-Stage Hybrid Search & Evaluation Platform
 
-A dual-vector hybrid retrieval pipeline that combines dense vector embeddings with sparse keyword search (BM25) over MS MARCO passages, deployed with a local Qdrant vector database and an interactive Streamlit benchmarking dashboard.
+HYDRA-RAG is a high-performance retrieval and evaluation platform built on **Qdrant**, **FastEmbed**, and **RAGAS**. The system implements a two-stage hybrid retrieval architecture:
+
+* **Phase 1 (Dense Baseline):** Dense semantic search using deep representation models (`BAAI/bge-small-en-v1.5`).
+* **Phase 2 (Hybrid + Re-ranking):** Multi-channel candidate retrieval combining dense semantic embeddings with sparse BM25 token vectors, followed by neural re-ranking using a cross-encoder (`BAAI/bge-reranker-base`).
+
+The platform includes end-to-end data ingestion pipelines, latency benchmarking, automated RAGAS quality evaluation, and an interactive **Streamlit** dashboard for side-by-side comparison and telemetry inspection.
 
 ---
 
-## 1. Project Overview & Architecture
-
-Hydra-RAG addresses semantic-lexical retrieval failures in enterprise RAG systems. While standard vector search handles semantic similarity, it frequently fails on exact keywords, part numbers, or specific terminology. Conversely, naive hybrid fusion often suffers from false-positive keyword displacement, which degrades recall.
-
-Hydra-RAG implements a **Dense-Floor Cascaded Retriever with Calibrated Lexical Fusion**:
-
-- **Candidate Anchor (Dense Floor):** Queries the vector space using dense embeddings (`BAAI/bge-small-en-v1.5`) to preserve a **1.0000 Context Recall floor**.
-- **Lexical Tie-Breaking (Sparse Leg):** Evaluates lexical term overlaps via sparse BM25 representations (`Qdrant/bm25`) within candidate horizons to boost exact keyword matches.
-- **Calibrated Linear Fusion:** Employs normalized, bounded linear score fusion ($\beta = 0.035$) instead of ordinal Reciprocal Rank Fusion (RRF), preventing low-semantic distractors from displacing gold chunks while breaking semantic ties.
-
-### Pipeline
+## Architecture Overview
 
 ```text
-                    ┌─► Dense vector search (Qdrant, BGE-small) ─► Candidate anchor (k=5) ──┐
-User query ─► Pre-retrieval                                                                 ├─► Calibrated fusion ─► Top-5 context ─► RAGAS / UI dashboard
-              filtering (Qdrant)                                                            │   (beta = 0.035)
-                    └─► Sparse vector search (Qdrant, BM25) ─────► Horizon (k=25) ──────────┘
+                         +-----------------------+
+                         |      User Query       |
+                         +-----------+-----------+
+                                     |
+                  +------------------+------------------+
+                  |                                     |
+                  v                                     v
+       +--------------------+                +--------------------+
+       |   Dense Embedder   |                |   Sparse Embedder  |
+       | (BGE Small / ONNX) |                |   (BM25 Tokenizer) |
+       +----------+---------+                +----------+---------+
+                  |                                     |
+                  v                                     v
+       +--------------------+                +--------------------+
+       | Qdrant Dense Index |                | Qdrant Sparse Leg  |
+       +----------+---------+                +----------+---------+
+                  |                                     |
+                  +------------------+------------------+
+                                     |
+                                     v
+                         +-----------------------+
+                         |  Candidate Pool Union |
+                         +-----------+-----------+
+                                     |
+                                     v
+                         +-----------------------+
+                         | Neural Cross-Encoder  |
+                         |   (bge-reranker-base) |
+                         +-----------+-----------+
+                                     |
+                                     v
+                         +-----------------------+
+                         |  Top-K Ranked Passages|
+                         +-----------------------+
 ```
 
 ---
 
-## 2. Directory Structure
+## Repository Structure
 
 ```text
-hydra-rag/
-├── app/
-│   ├── streamlit_app.py        # Main entrypoint for Streamlit dashboard
-│   ├── views.py                # Dashboard tab layouts and benchmark charts
-│   └── ui_helpers.py           # Metric artifact loaders and data-walking utilities
-├── retrieval/
+├── app/                      # Streamlit dashboard and UI logic
+│   ├── config.py             # UI configuration and state management
+│   ├── streamlit_app.py      # Dashboard entry point
+│   ├── ui_helpers.py         # Visual components, charts, and metrics loaders
+│   └── views.py              # Search page and Phase comparison views
+├── data/                     # Corpus files, ground truth, and precomputed embeddings
+│   ├── categories.json       # Corpus topic taxonomy
+│   ├── embeddings.npy        # Serialized dense vector arrays
+│   ├── eval_set.json         # Labelled questions and ground-truth contexts
+│   └── passages.jsonl        # Raw passage documents (MS MARCO slice)
+├── eval/                     # Evaluation harnesses
 │   ├── __init__.py
-│   └── retriever.py            # HydraRetriever (Dense, Sparse, and Calibrated Hybrid)
-├── results/
-│   ├── phase1_latency.json     # Phase 1 latency metrics (p50, p95, p99, mean)
-│   ├── phase2_latency.json     # Phase 2 latency metrics (p50, p95, p99, mean)
-│   ├── phase1_ragas.json       # Phase 1 RAGAS baseline evaluation scores
-│   └── phase2_ragas.json       # Phase 2 RAGAS hybrid evaluation scores
-├── data/
-│   └── corpus/                 # MS MARCO 100k+ passages subset
-├── scripts/
-│   ├── ingest.py               # Dataset download, embedding generation, Qdrant indexing
-│   ├── benchmark_latency.py    # 100-query latency benchmarking script
-│   └── evaluate_ragas.py       # RAGAS evaluation runner with Groq LLM judge
-├── config.yaml                 # Qdrant client configurations and model identifiers
-├── requirements.txt            # Python dependencies (free-tier only)
-└── README.md                   # System documentation and execution guide
+│   └── eval_ragas.py         # RAGAS evaluation runner (Precision, Recall, etc.)
+├── fusion/                   # Fusion algorithms
+│   └── rank_fusion.py        # Reciprocal Rank Fusion (RRF) and merge utilities
+├── ingest/                   # Document preprocessing and indexing pipelines
+│   ├── categories.py         # Category classification and extraction logic
+│   ├── embed.py              # FastEmbed batch vector computation
+│   ├── explore_msmarco.py    # Dataset exploration and schema checking
+│   ├── index.py              # High-level index orchestration
+│   ├── index_service.py      # Background ingestion worker service
+│   ├── prepare_data.py       # Corpus cleaning and formatting
+│   └── qdrant_ingest.py      # Batch payload writer for Qdrant collection
+├── qdrant_storage/           # Local Qdrant persistent storage volume
+├── results/                  # Serialized evaluation & latency telemetry JSONs
+│   ├── phase1_latency.json
+│   ├── phase1_ragas.json
+│   ├── phase2_latency.json
+│   ├── phase2_ragas.json
+│   └── ...
+├── retrieval/                # Core retrieval engine
+│   ├── __init__.py
+│   └── retriever.py          # HydraRetriever: multi-stage retrieval & re-ranking
+├── scripts/                  # Diagnostics and benchmark CLI tools
+│   ├── benchmark_latency.py  # Automated p50, p95, p99 latency test suite
+│   ├── peek_data.py          # Inspect records from passages.jsonl
+│   ├── smoke_test.py         # End-to-end operational pipeline healthcheck
+│   ├── test_live_updates.py  # Test dynamic ingestion into Qdrant
+│   └── test_retriever.py     # Unit test runner for retriever components
+├── config.yaml               # System parameters (models, vectors, Qdrant ports)
+├── docker-compose.yml        # Qdrant engine container specification
+├── requirements.txt          # Python dependencies
+└── .env                      # API keys and local environment variables
 ```
 
 ---
 
-## 3. Benchmark Results & Verification
+## Getting Started
 
-All benchmarks were evaluated on consumer hardware (AMD Ryzen 5 7530U, 12 logical cores, 16 GB RAM) on Linux against a minimum of 100,000 indexed MS MARCO passages.
+### 1. Prerequisites
 
-### RAGAS Accuracy Evaluation (50 Queries, Groq LLM Judge)
+* **Python 3.10+** (Python 3.11 recommended)
+* **Docker & Docker Compose** (for running Qdrant)
+* **Git**
 
-| Metric | Acceptance Criteria | Phase 1 (Dense Baseline) | Phase 2 (Hydra Hybrid) | Status |
-| --- | --- | --- | --- | --- |
-| **Context Precision** | > 0.75 | **0.8598** | **0.8587** | Passed (> 0.75) |
-| **Context Recall** | > 0.70 | **1.0000** | **1.0000** | Passed (1.0000 recall floor preserved) |
-| **Label Recall@5** | Reference metric | **1.0000** | **1.0000** | Passed |
-
-### Latency Benchmark (100 Consecutive Queries)
-
-| Metric | Target Constraint | Phase 1 (Dense) | Phase 2 (Hybrid) | Delta |
-| --- | --- | --- | --- | --- |
-| **p50 Latency** | n/a | 29.69 ms | 37.56 ms | +7.9 ms |
-| **p95 Latency** | < 300.00 ms | **37.42 ms** | **44.75 ms** | +7.3 ms |
-| **p99 Latency** | n/a | 45.85 ms | 47.01 ms | +1.2 ms |
-| **Mean Latency** | n/a | 30.59 ms | 38.09 ms | +7.5 ms |
-
----
-
-## 4. Setup & Installation
-
-### Prerequisites
-
-- Python 3.10+
-- Docker (for the local Qdrant instance) or a native Qdrant binary
-- Consumer CPU/system with ≥ 8 GB RAM
-- Free-tier Groq API key (for RAGAS evaluation only)
-
-### 1. Clone Repository & Set Up Virtual Environment
+### 2. Clone the Repository
 
 ```bash
-git clone https://github.com/your-org/hydra-rag.git
+git clone <your-repository-url>
 cd hydra-rag
+```
 
-python3 -m venv venv
-source venv/bin/activate
+### 3. Create and Activate a Virtual Environment
+
+```bash
+python -m venv .venv
+
+# On Linux/macOS:
+source .venv/bin/activate
+
+# On Windows (Command Prompt):
+# .venv\Scripts\activate.bat
+
+# On Windows (PowerShell):
+# .venv\Scripts\Activate.ps1
+```
+
+### 4. Install Dependencies
+
+```bash
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 2. Launch Vector Database (Qdrant)
+### 5. Configure Environment Variables
 
-Run Qdrant via Docker locally on port `6333`:
+Create a `.env` file in the root directory:
 
 ```bash
-docker run -d -p 6333:6333 -p 6334:6334 \
-    -v $(pwd)/qdrant_storage:/qdrant/storage:z \
-    --name qdrant_hydra qdrant/qdrant:latest
+cp .env.example .env   # Or create it manually
 ```
 
-### 3. Ingest MS MARCO Dataset (≥ 100k Passages)
+Populate it with your credentials:
 
-Downloads the MS MARCO passage dataset from Hugging Face, generates dense embeddings (`BAAI/bge-small-en-v1.5`) and sparse BM25 representations (`Qdrant/bm25`), and upserts vectors and metadata into Qdrant:
+```ini
+# Optional: Required only if using managed cloud Qdrant
+QDRANT_API_KEY=
+
+# Required if running RAGAS evaluation with OpenAI/Gemini/Anthropic LLMs
+OPENAI_API_KEY=your_llm_api_key_here
+```
+
+Review `config.yaml` to ensure Qdrant endpoints, embedding models, and vector collection parameters match your target setup.
+
+---
+
+## Running the Platform
+
+### Step 1: Start the Vector Database (Qdrant)
+
+Launch the Qdrant vector engine using Docker Compose:
 
 ```bash
-python scripts/ingest.py --limit 100000
+docker compose up -d
+```
+
+Verify that the Qdrant container is up and running:
+
+* **Web UI / Dashboard:** `http://localhost:6333/dashboard`
+* **Healthcheck:** `curl http://localhost:6333/readyz`
+
+---
+
+### Step 2: Ingest and Index the Corpus
+
+Run the ingestion pipeline to parse `data/passages.jsonl`, generate dense and sparse representations, and upload them to Qdrant:
+
+```bash
+# Prepare and clean raw passage data
+python ingest/prepare_data.py
+
+# Generate embeddings and upload to Qdrant collection
+python ingest/qdrant_ingest.py
+```
+
+To verify that the records were correctly populated in Qdrant:
+
+```bash
+python scripts/smoke_test.py
 ```
 
 ---
 
-## 5. Running Evaluations & Benchmarks
+### Step 3: Run Benchmarks and Evaluation (Optional)
 
-### Latency Benchmark (100 Queries)
-
-Runs 100 sequential queries across dense and hybrid configurations, capturing p50, p95, p99, and stage breakdowns:
+**Latency profiling (p50 / p95 / p99).** Executes query runs against dense and hybrid retrieval tracks and writes telemetry logs to `results/`:
 
 ```bash
-python scripts/benchmark_latency.py --queries 100
+python scripts/benchmark_latency.py
 ```
 
-Outputs are stored in `results/phase1_latency.json` and `results/phase2_latency.json`.
-
-### RAGAS Accuracy Evaluation
-
-Evaluates Context Precision and Context Recall across sample queries using the Groq free-tier LLM judge:
+**RAGAS quality evaluation.** Evaluates retrieval accuracy, Context Precision, and Context Recall using `data/eval_set.json`:
 
 ```bash
-export GROQ_API_KEY="your_groq_key_here"
-python scripts/evaluate_ragas.py --phase 1
-python scripts/evaluate_ragas.py --phase 2
+python eval/eval_ragas.py
 ```
-
-Outputs are written to `results/phase1_ragas.json` and `results/phase2_ragas.json`.
 
 ---
 
-## 6. Interactive Demo & Streamlit Dashboard
+### Step 4: Launch the Streamlit Dashboard
 
-Launch the benchmarking dashboard and query testing interface:
+Run the UI to test interactive queries, explore passage categories, and view side-by-side performance scorecards:
 
 ```bash
-streamlit run app/streamlit_app.py
+python -m streamlit run app/streamlit_app.py
 ```
 
-### Feature Checklist in Dashboard
-
-- **Live Query Interface:** Toggle between Phase 1 (Dense) and Phase 2 (Hybrid) retrieval modes to inspect returned passages, scores, and metadata.
-- **Metadata Pre-Filtering:** Test structured pre-filtering on indexed attributes directly at the Qdrant storage level.
-- **Latency Visualizations:** Inspect p50, p95, p99 metrics and stage breakdowns (`embed_ms`, `search_ms`, `fuse_ms`) across 100-query distributions.
-- **Live Index Modifications:** Verify runtime document upsertion and deletion by ID without re-indexing the corpus.
+Open your browser at `http://localhost:8501`.
 
 ---
 
-## 7. Compliance Matrix
+## Retrieval Modes Explained
 
-| Requirement ID | Specification | Implementation Verification | Status |
+| Mode | Mechanism | Strength | Latency Target |
 | --- | --- | --- | --- |
-| **FR-1** | Ingest ≥ 100,000 MS MARCO passages | Indexed into Qdrant with dense vectors, BM25, and payloads | Compliant |
-| **FR-2** | Baseline Dense Retrieval & RAGAS | BGE-small cosine search with logged baseline precision and recall | Compliant |
-| **FR-3** | Hybrid Search with Configurable Fusion | Dense-anchored BM25 score fusion with configurable β weighting | Compliant |
-| **FR-4** | Metadata Filtering | Pre-retrieval filtering executed at Qdrant payload index level | Compliant |
-| **FR-5** | Live Index Updates | Dedicated point upsert and point delete methods via Qdrant Client | Compliant |
-| **FR-6** | Query Interface | Interactive Streamlit application supporting mode toggling and latency views | Compliant |
-| **NFR-1 / 2** | Context Precision > 0.75, Recall > 0.70 | Precision: **0.8587**, Recall: **1.0000** | Compliant |
-| **NFR-3** | Query Latency p95 < 300 ms | Measured hybrid p95: **44.75 ms** | Compliant |
-| **C-01** | Free-Tier Tools Only | FastEmbed, local Qdrant, Groq free-tier LLM judge | Compliant |
+| **Dense (Phase 1)** | Cosine similarity over BGE dense vector representations. | Captures semantic context and conceptual meaning. | `< 50 ms` |
+| **Sparse (BM25)** | Token-level lexical frequency via Qdrant Sparse vectors. | Exact keyword, entity, product, and code matches. | `< 30 ms` |
+| **Hybrid (Phase 2)** | Union of candidates from dense + sparse legs, re-ranked via Cross-Encoder. | Maximizes precision and recall; resolves keyword mismatch. | `< 150 ms` |
+
+---
+
+## Troubleshooting
+
+* **`ModuleNotFoundError: No module named 'retrieval'`:** Always run commands from the repository root, or explicitly register the workspace root in your environment:
+
+  ```bash
+  export PYTHONPATH="${PYTHONPATH}:$(pwd)"
+  ```
+
+* **Qdrant Connection Refused:** Ensure the Docker daemon is active and run `docker compose ps` to verify container status on port `6333`.
+
+* **CPU Latency Optimization:** FastEmbed uses ONNX Runtime. Multi-threading is pinned via OpenMP flags in `retrieval/retriever.py` to prevent CPU oversubscription:
+
+  ```python
+  import os
+  os.environ["OMP_NUM_THREADS"] = "4"
+  os.environ["MKL_NUM_THREADS"] = "4"
+  ```
